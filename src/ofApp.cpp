@@ -1,6 +1,6 @@
 #include "ofApp.h"
 
-const std::string robot="mrpmpi0.local";
+const std::string robot="mrpmpi1.local";
 const int PORT_ROBOT=8000;
 
 //--------------------------------------------------------------
@@ -17,6 +17,20 @@ void ofApp::update(){
   m.addInt32Arg(getDrc());
   
   sndr.sendMessage(m);
+  
+  static const bool withPermission = true;
+  if(withPermission){
+    ofxOscMessage x;
+    x.setAddress("/main/toRobot");
+    x.addInt32Arg(0);
+    x.addDoubleArg(0.f);
+    x.addDoubleArg(0.f);
+    x.addDoubleArg(0.f);
+    for(int i=0; i<9; ++i){
+      x.addBoolArg(true);
+    }
+    sndr.sendMessage(x);
+  }
 }
 
 //--------------------------------------------------------------
