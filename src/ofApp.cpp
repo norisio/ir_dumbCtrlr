@@ -1,35 +1,43 @@
 #include "ofApp.h"
 
-const std::string robot="mrpmpi1.local";
+const std::array<std::string, 4>
+robot{
+  "mrpmpi1.local",
+  "mrpmpi2.local",
+  "mrpmpi3.local",
+  "mrpmpi4.local"
+};
 const int PORT_ROBOT=8000;
 
 //--------------------------------------------------------------
 void ofApp::setup(){
   ofSetFrameRate(60);
   up=down=right=left=false;
-  sndr.setup(robot, PORT_ROBOT);
+  
 }
 
 //--------------------------------------------------------------
 void ofApp::update(){
-  ofxOscMessage m;
-  m.setAddress("/ctrlr/operation");
-  m.addInt32Arg(getDrc());
-  
-  sndr.sendMessage(m);
-  
-  static const bool withPermission = true;
-  if(withPermission){
-    ofxOscMessage x;
-    x.setAddress("/main/toRobot");
-    x.addInt32Arg(0);
-    x.addDoubleArg(0.f);
-    x.addDoubleArg(0.f);
-    x.addDoubleArg(0.f);
-    for(int i=0; i<9; ++i){
-      x.addBoolArg(true);
+  if(isSenderReady){
+    ofxOscMessage m;
+    m.setAddress("/operator/operation");
+    m.addInt32Arg(getDrc());
+    
+    sndr->sendMessage(m);
+    
+    static const bool withPermission = true;
+    if(withPermission){
+      ofxOscMessage x;
+      x.setAddress("/main/toRobot");
+      x.addInt32Arg(0);
+      x.addDoubleArg(0.f);
+      x.addDoubleArg(0.f);
+      x.addDoubleArg(0.f);
+      for(int i=0; i<9; ++i){
+        x.addBoolArg(true);
+      }
+      sndr->sendMessage(x);
     }
-    sndr.sendMessage(x);
   }
 }
 
@@ -37,10 +45,14 @@ void ofApp::update(){
 void ofApp::draw(){
   static int width=ofGetWidth(), height=ofGetHeight();
   
-  ofSetColor(ofColor::black);
-  std::string str=robot+":"+ofToString(PORT_ROBOT);
+  std::string str;
+  if(isSenderReady){
+    ofSetColor(ofColor::black);
+    str=robot[senderRobInd]+":"+ofToString(PORT_ROBOT);
+  }else{
+    str="Press 1-4.";
+  }
   ofDrawBitmapString(str, 0, 30);
-  
   
   ofPushMatrix();
   ofTranslate(width/2, height/2);
@@ -104,6 +116,15 @@ void ofApp::keyPressed(int key){
     case OF_KEY_RIGHT:
       right=true;
       break;
+    case OF_KEY_BACKSPACE:
+      if(isSenderReady)deleteSender();
+      break;
+    case '1':
+    case '2':
+    case '3':
+    case '4':
+      if(!isSenderReady)setupSender(key);
+      break;
   }
 }
 
@@ -122,6 +143,23 @@ void ofApp::keyReleased(int key){
     case OF_KEY_RIGHT:
       right=false;
       break;
+  }
+}
+
+void ofApp::setupSender(int key){
+  if(!isSenderReady){
+    sndr = new ofxOscSender;
+    int i = key - '1';
+    senderRobInd = i;
+    sndr->setup(robot[i], PORT_ROBOT);
+    isSenderReady = true;
+  }
+}
+
+void ofApp::deleteSender(){
+  if(isSenderReady){
+    delete sndr;
+    isSenderReady = false;
   }
 }
 

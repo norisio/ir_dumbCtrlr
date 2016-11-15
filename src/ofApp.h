@@ -23,8 +23,13 @@ public:
     void gotMessage(ofMessage msg);
     
 private:
+    bool isSenderReady{false};
+    int senderRobInd{0};
     bool up, down, left, right;
-    ofxOscSender sndr;
+    ofxOscSender* sndr;
     int32_t getDrc();
     float getRot();
+    
+    void setupSender(int key);
+    void deleteSender();
 };
